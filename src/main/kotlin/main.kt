@@ -52,7 +52,10 @@ fun main(args: Array<String>) {
 		it.fileName.toString() to yaml.decodeFromString<List<Reagent>>(it.readText())
 	}.toMap()
 
-	for (reagent in reagents["narcotics.yml"]!!) {
+	// note: default metabolic rate is 0.5
+
+	// TODO: metabolic rate
+	for (reagent in reagents["medicine.yml"]!!) {
 		if(reagent.metabolisms == null)
 			continue
 
@@ -66,7 +69,8 @@ fun main(args: Array<String>) {
 			.split(" ")
 			.joinToString(" ") { it.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } }
 
-		println(name + " / " + (healthEffects?.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose"))
+		// TODO: show the works on the dead flag
+		println(name + " / " + (healthEffects.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose"))
 		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
 
 		// print all heal effects first
@@ -110,6 +114,4 @@ fun main(args: Array<String>) {
 
 		println()
 	}
-//	val reagents = yaml.decodeFromString<List<Reagent>>(yamlString)
-//	println(reagents)
 }

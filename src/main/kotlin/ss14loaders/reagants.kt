@@ -19,7 +19,8 @@ data class Reagent(
     val flavor: String? = null,
     val color: String? = null,
     val metabolisms: Map<String, Metabolism>? = null,
-    val plantMetabolism: List<Effect>? = null
+    val plantMetabolism: List<Effect>? = null,
+    val worksOnTheDead: Boolean = false
 )
 
 @Serializable
@@ -100,7 +101,7 @@ sealed class Condition {
         val max: Double? = null
     ) : Condition() {
         override fun humanDescription(): String {
-            return minMaxString(min, max, " temperature", "")
+            return minMaxString(min, max, "", "K")?.let { "temperature $it" }
                 ?: "Temperature unclear"
         }
     }
@@ -253,9 +254,9 @@ data class AdjustTemperature(
 ) : Effect() {
     override fun humanReadable(): String {
         return if(amount > 0)
-            "temperature +${amount.hr()}"
+            "temperature +${amount.hr()}K"
         else
-            "temperature -${(amount * -1).hr()}"
+            "temperature -${(amount * -1).hr()}K"
     }
 }
 
@@ -267,9 +268,9 @@ data class AdjustReagent(
 ) : Effect() {
     override fun humanReadable(): String {
         return if(amount > 0)
-            "adjust reagent ${SS14Locale.getLocaleString(reagent) ?: reagent} +${amount.hr()}u"
+            "adjust reagent adding ${amount.hr()}u ${SS14Locale.getLocaleString(reagent) ?: reagent}"
         else
-            "adjust reagent ${SS14Locale.getLocaleString(reagent) ?: reagent} -${(amount * -1).hr()}u"
+            "adjust reagent removing ${(amount * -1).hr()}u ${SS14Locale.getLocaleString(reagent) ?: reagent}"
     }
 }
 
