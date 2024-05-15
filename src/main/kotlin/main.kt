@@ -69,47 +69,58 @@ fun main(args: Array<String>) {
 			.split(" ")
 			.joinToString(" ") { it.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } }
 
-		// TODO: show the works on the dead flag
-		println(name + " / " + (healthEffects.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose"))
+		println(buildString {
+			append(name)
+			append(" / ")
+			append(healthEffects.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose")
+
+			if(reagent.worksOnTheDead)
+				append(" (works on the dead)")
+		})
 		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
 
 		// print all heal effects first
 		healthEffects.filter { it.healthValues().isNotEmpty() }
 			.forEach {
-				val condString = run {
+				println(buildString {
+					append("    * ")
+
 					if(it.conditions == null)
-						"always"
+						append("always")
 					else
-						it.conditions.joinToString(",") { it.humanDescription() }
-				}
+						append(it.conditions.joinToString(",") { it.humanDescription() })
 
-				val results = it.healthValues().map {
-					val value = it.value * -1
+					append(": ")
 
-					if(value > 0)
-						"heals ${value.hr()} ${it.key}"
-					else
-						"inflicts ${(value * -1).hr()} ${it.key} damage"
-				}
+					append(it.healthValues().map {
+						val value = it.value * -1
 
-				println("    * $condString: " + results.joinToString(", "))
+						if(value > 0)
+							"heals ${value.hr()} ${it.key}"
+						else
+							"inflicts ${(value * -1).hr()} ${it.key} damage"
+					}.joinToString(", "))
+				})
 			}
 
 		// print all other effects
 		allEffects
 			.filter { it !is HealthChange }
 			.forEach {
-				val condString = run {
-					if(it.conditions == null)
-						"always"
-					else
-						it.conditions.joinToString(",") { it.humanDescription() }
-				}
+				println(buildString {
+					append("    - ")
 
-				if(it.probability != null)
-					println("    - $condString: ${it.humanReadable()} (${(it.probability * 100).hr()}% chance)")
-				else
-					println("    - $condString: ${it.humanReadable()}")
+					if(it.conditions == null)
+						append("always")
+					else
+						append(it.conditions.joinToString(",") { it.humanDescription() })
+
+					append(": ")
+					append(it.humanReadable())
+
+					if(it.probability != null)
+						append(" (${(it.probability * 100).hr()}% chance)")
+				})
 			}
 
 		println()
