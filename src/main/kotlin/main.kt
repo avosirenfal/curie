@@ -2,6 +2,7 @@ import kotlinx.serialization.*
 import com.charleskorn.kaml.*
 import kotlinx.serialization.modules.SerializersModule
 import ss14loaders.*
+import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.readText
@@ -17,6 +18,9 @@ val yaml = Yaml(
 	}
 )
 
+fun HealthChange.healthValues(): Map<String, Double> =
+	((this.damage.groups ?: mapOf()).entries + (this.damage.types ?: mapOf()).entries).associate { it.key to it.value }
+
 fun HealthChange.overdoseString(): String? {
 	if(this.conditions == null || this.conditions.size != 1
 		|| this.conditions[0] !is Condition.ReagentThreshold)
@@ -27,8 +31,7 @@ fun HealthChange.overdoseString(): String? {
 	if(threshold.reagant != null || threshold.min == null)
 		return null
 
-	val damageTypes = ((this.damage.groups ?: mapOf()).entries + (this.damage.types ?: mapOf()).entries)
-		.filter { it.value > 0 }
+	val damageTypes = this.healthValues().filter { it.value > 0 }
 
 	// this heals, it doesn't dmage
 	if(damageTypes.isEmpty())
@@ -38,33 +41,68 @@ fun HealthChange.overdoseString(): String? {
 	return "OD ${threshold.min.hr()}u"
 }
 
-fun Double.hr(): String {
-	return if (this % 1.0 == 0.0) {
-		this.toInt().toString()
-	} else {
-		this.toString()
-	}
-}
-
 fun main(args: Array<String>) {
 	val ss14_path = Path(args[0])
 	val prototypes_path = Path(ss14_path.toString(), "Resources", "Prototypes")
 	val reagants_path = Path(prototypes_path.toString(), "Reagents")
-	val locale = loadAllLocaleFromPath(Path(ss14_path.toString(), "Resources", "Locale", "en-US"))
+	SS14Locale.loadAllFromPath(Path(ss14_path.toString(), "Resources", "Locale", "en-US"))
 
 	val reagants = reagants_path.listDirectoryEntries("*.yml").map {
+//		println(it)
 		it.fileName.toString() to yaml.decodeFromString<List<Reagent>>(it.readText())
 	}.toMap()
 
-	reagants.get("medicine.yml")!!.forEach { reagant ->
+	reagants["medicine.yml"]!!.forEach { reagant ->
 		val effects = reagant.metabolisms?.get("Medicine")?.effects ?: return@forEach
-		val change = effects.filterIsInstance<HealthChange>().filter { it.overdoseString() != null }
+		val healthEffects = effects.filterIsInstance<HealthChange>()
 
-		if(change.isEmpty())
-			return@forEach
+		val name = SS14Locale.getLocaleString(reagant.name ?: "notfound")!!
+			.split(" ")
+			.joinToString(" ") { it.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } }
 
-		val name = locale.getOrElse(reagant.name ?: "notfound") {"notfound: ${reagant.id}"}
-		println(name + " " + change[0].overdoseString())
+		println(name + " / " + (healthEffects.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose"))
+		println(SS14Locale.getLocaleString(reagant.desc!!)!!)
+
+		// print all heal effects first
+		healthEffects.filter { it.healthValues().isNotEmpty() }
+			.forEach {
+				val condString = run {
+					if(it.conditions == null)
+						"always"
+					else
+						it.conditions.joinToString(",") { it.humanDescription() }
+				}
+
+				val results = it.healthValues().map {
+					val value = it.value * -1
+
+					if(value > 0)
+						"heals ${value.hr()} ${it.key}"
+					else
+						"inflicts ${(value * -1).hr()} ${it.key} damage"
+				}
+
+				println("    * $condString: " + results.joinToString(", "))
+			}
+
+		// print all other effects
+		val others = effects
+			.filter { it !is HealthChange }
+			.forEach {
+				val condString = run {
+					if(it.conditions == null)
+						"always"
+					else
+						it.conditions.joinToString(",") { it.humanDescription() }
+				}
+
+				if(it.probability != null)
+					println("    - $condString: ${it.humanReadable()} (${(it.probability * 100).hr()}% chance)")
+				else
+					println("    - $condString: ${it.humanReadable()}")
+			}
+
+		println()
 	}
 //	val reagents = yaml.decodeFromString<List<Reagent>>(yamlString)
 //	println(reagents)

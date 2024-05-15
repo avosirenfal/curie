@@ -28,3 +28,13 @@ fun loadAllLocaleFromPath(path: Path): Map<String, String> {
 	}
 	return out.toMap()
 }
+
+object SS14Locale {
+	private val locale = mutableMapOf<String, String>()
+
+	fun getLocaleString(key: String): String? = locale[key]
+
+	fun loadAllFromPath(path: Path) {
+		locale.putAll(loadAllLocaleFromPath(path))
+	}
+}
