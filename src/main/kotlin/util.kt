@@ -1,7 +1,6 @@
 fun Double.hr(): String {
-	return if (this % 1.0 == 0.0) {
-		this.toInt().toString()
-	} else {
-		this.toString()
-	}
+	val ret = "%.1f".format(this)
+	if(ret.endsWith(".0"))
+		return ret.substring(0, ret.length -2)
+	return ret
 }

@@ -52,15 +52,21 @@ fun main(args: Array<String>) {
 		it.fileName.toString() to yaml.decodeFromString<List<Reagent>>(it.readText())
 	}.toMap()
 
-	reagents["medicine.yml"]!!.forEach { reagent ->
-		val effects = reagent.metabolisms?.get("Medicine")?.effects ?: return@forEach
-		val healthEffects = effects.filterIsInstance<HealthChange>()
+	for (reagent in reagents["narcotics.yml"]!!) {
+		if(reagent.metabolisms == null)
+			continue
+
+		val metabolismLookup = reagent.metabolisms
+			.map { it.value.effects.map { eff -> eff to it.value  } }
+			.flatten().toMap()
+		val allEffects = reagent.metabolisms.map { it.value.effects }.flatten()
+		val healthEffects = allEffects.filterIsInstance<HealthChange>()
 
 		val name = SS14Locale.getLocaleString(reagent.name ?: "notfound")!!
 			.split(" ")
 			.joinToString(" ") { it.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } }
 
-		println(name + " / " + (healthEffects.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose"))
+		println(name + " / " + (healthEffects?.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose"))
 		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
 
 		// print all heal effects first
@@ -86,7 +92,7 @@ fun main(args: Array<String>) {
 			}
 
 		// print all other effects
-		effects
+		allEffects
 			.filter { it !is HealthChange }
 			.forEach {
 				val condString = run {

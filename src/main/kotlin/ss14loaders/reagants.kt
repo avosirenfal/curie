@@ -5,6 +5,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import kotlin.math.abs
+import kotlin.math.round
 
 @Serializable
 data class Reagent(
@@ -22,6 +24,7 @@ data class Reagent(
 
 @Serializable
 data class Metabolism(
+    val metabolismRate: Double? = null,
     val effects: List<Effect>
 )
 
@@ -182,6 +185,29 @@ data class HealthChange(
 ) : Effect() {
     override fun humanReadable(): String {
         return "healthchange"
+    }
+}
+
+@Serializable
+@SerialName("!type:MovespeedModifier")
+data class MovespeedModifier(
+    val walkSpeedModifier: Double?,
+    val sprintSpeedModifier: Double?,
+) : Effect() {
+    override fun humanReadable(): String {
+        val msgs = mutableListOf<String>()
+
+        if(walkSpeedModifier != null) {
+            val verb = if(walkSpeedModifier > 1.0) "increases" else "decreases"
+            msgs.add("$verb walk speed by ${((abs(walkSpeedModifier) - 1) * 100).hr()}%")
+        }
+
+        if(sprintSpeedModifier != null) {
+            val verb = if(sprintSpeedModifier > 1.0) "increases" else "decreases"
+            msgs.add("$verb sprint speed by ${((abs(sprintSpeedModifier) - 1) * 100).hr()}%")
+        }
+
+        return msgs.joinToString(", ")
     }
 }
 
