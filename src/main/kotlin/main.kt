@@ -1,10 +1,7 @@
 import kotlinx.serialization.*
 import com.charleskorn.kaml.*
 import kotlinx.serialization.modules.SerializersModule
-import ss14loaders.Condition
-import ss14loaders.Effect
-import ss14loaders.HealthChange
-import ss14loaders.Reagent
+import ss14loaders.*
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.readText
@@ -53,6 +50,7 @@ fun main(args: Array<String>) {
 	val ss14_path = Path(args[0])
 	val prototypes_path = Path(ss14_path.toString(), "Resources", "Prototypes")
 	val reagants_path = Path(prototypes_path.toString(), "Reagents")
+	val locale = loadAllLocaleFromPath(Path(ss14_path.toString(), "Resources", "Locale", "en-US"))
 
 	val reagants = reagants_path.listDirectoryEntries("*.yml").map {
 		it.fileName.toString() to yaml.decodeFromString<List<Reagent>>(it.readText())
@@ -65,7 +63,8 @@ fun main(args: Array<String>) {
 		if(change.isEmpty())
 			return@forEach
 
-		println(reagant.id + " " + change[0].overdoseString())
+		val name = locale.getOrElse(reagant.name ?: "notfound") {"notfound: ${reagant.id}"}
+		println(name + " " + change[0].overdoseString())
 	}
 //	val reagents = yaml.decodeFromString<List<Reagent>>(yamlString)
 //	println(reagents)
