@@ -70,10 +70,10 @@ sealed class Condition {
     data class ReagentThreshold(
         val min: Double? = null,
         val max: Double? = null,
-        val reagant: String? = null
+        val reagent: String? = null
     ) : Condition() {
         override fun humanDescription(): String {
-            return minMaxString(min, max, if(reagant == null) "" else " of $reagant")
+            return minMaxString(min, max, if(reagent == null) "" else " of $reagent")
                 ?: "ReagentThreshold unclear"
         }
     }
@@ -141,7 +141,9 @@ sealed class Condition {
 @SerialName("!type:GenericStatusEffect")
 data class GenericStatusEffect(
     val key: String,
-    val component: String? = null
+    val component: String? = null,
+    val time: Double? = null,
+    val type: String? = null
 ) : Effect() {
     override fun humanReadable(): String {
         val name = run {
@@ -152,8 +154,13 @@ data class GenericStatusEffect(
             else
                 key
         }
+        val time = if(time == null) " " else " ${time.hr()} seconds of "
 
-        return "inflict generic status effect ($name)"
+        return when(type) {
+            null -> "inflict${time}generic status effect $name"
+            "Remove" -> "removes${time}generic status effect $name"
+            else -> "$type${time}generic status effect $name"
+        }
     }
 }
 
@@ -234,9 +241,9 @@ data class AdjustReagent(
 ) : Effect() {
     override fun humanReadable(): String {
         return if(amount > 0)
-            "adjust reagant ${SS14Locale.getLocaleString(reagent) ?: reagent} +${amount.hr()}u"
+            "adjust reagent ${SS14Locale.getLocaleString(reagent) ?: reagent} +${amount.hr()}u"
         else
-            "adjust reagant ${SS14Locale.getLocaleString(reagent) ?: reagent} -${(amount * -1).hr()}u"
+            "adjust reagent ${SS14Locale.getLocaleString(reagent) ?: reagent} -${(amount * -1).hr()}u"
     }
 }
 
@@ -250,9 +257,9 @@ data class SatiateThirst(
             return "satiate thirst (completely? 1u? unclear!)"
 
         return if(factor > 0)
-            "satiate thirst +${factor.hr()}"
+            "satiate ${factor.hr()} thirst"
         else
-            "cause thirst -${(factor * -1).hr()}"
+            "cause ${(factor * -1).hr()} thirst"
     }
 }
 
@@ -266,9 +273,9 @@ data class SatiateHunger(
             return "satiate hunger (completely? 1u? unclear!)"
 
         return if(factor > 0)
-            "satiate hunger +${factor.hr()}"
+            "satiate ${factor.hr()} hunger"
         else
-            "cause hunger -${(factor * -1).hr()}"
+            "cause ${(factor * -1).hr()} hunger"
     }
 }
 
@@ -303,9 +310,9 @@ data class ModifyBleedAmount(
 ) : Effect() {
     override fun humanReadable(): String {
         return if(amount > 0)
-            "modify bleed amount +${amount.hr()}"
+            "cause ${amount.hr()} bleeding"
         else
-            "modify bleed amount -${(amount * -1).hr()}"
+            "reduce bleeding by ${(amount * -1).hr()}"
     }
 }
 
@@ -324,7 +331,7 @@ data class Emote(
     val emote: String,
 ) : Effect() {
     override fun humanReadable(): String {
-        return "causes emote: $emote"
+        return "causes emote $emote"
     }
 }
 

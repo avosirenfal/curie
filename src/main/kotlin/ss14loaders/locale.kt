@@ -6,9 +6,9 @@ import kotlin.io.path.PathWalkOption
 import kotlin.io.path.readText
 import kotlin.io.path.walk
 
-private val reg = Regex("""(\S+)\s+=\s+(.+)""")
+private val reg = Regex("""\s*(\S+)\s+=\s+(.+)""")
 fun loadLocale(file: String): Map<String, String> {
-	return file.lines()
+	return file.replace("\uFEFF", "").lines()
 		.map {
 			val match = reg.matchEntire(it) ?: return@map null
 

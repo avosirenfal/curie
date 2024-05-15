@@ -26,9 +26,9 @@ fun HealthChange.overdoseString(): String? {
 		|| this.conditions[0] !is Condition.ReagentThreshold)
 		return null
 
-	// must be triggered by too much of this specific reagant
+	// must be triggered by too much of this specific reagent
 	val threshold = this.conditions[0] as Condition.ReagentThreshold
-	if(threshold.reagant != null || threshold.min == null)
+	if(threshold.reagent != null || threshold.min == null)
 		return null
 
 	val damageTypes = this.healthValues().filter { it.value > 0 }
@@ -44,24 +44,24 @@ fun HealthChange.overdoseString(): String? {
 fun main(args: Array<String>) {
 	val ss14_path = Path(args[0])
 	val prototypes_path = Path(ss14_path.toString(), "Resources", "Prototypes")
-	val reagants_path = Path(prototypes_path.toString(), "Reagents")
+	val reagents_path = Path(prototypes_path.toString(), "Reagents")
 	SS14Locale.loadAllFromPath(Path(ss14_path.toString(), "Resources", "Locale", "en-US"))
 
-	val reagants = reagants_path.listDirectoryEntries("*.yml").map {
+	val reagents = reagents_path.listDirectoryEntries("*.yml").map {
 //		println(it)
 		it.fileName.toString() to yaml.decodeFromString<List<Reagent>>(it.readText())
 	}.toMap()
 
-	reagants["medicine.yml"]!!.forEach { reagant ->
-		val effects = reagant.metabolisms?.get("Medicine")?.effects ?: return@forEach
+	reagents["medicine.yml"]!!.forEach { reagent ->
+		val effects = reagent.metabolisms?.get("Medicine")?.effects ?: return@forEach
 		val healthEffects = effects.filterIsInstance<HealthChange>()
 
-		val name = SS14Locale.getLocaleString(reagant.name ?: "notfound")!!
+		val name = SS14Locale.getLocaleString(reagent.name ?: "notfound")!!
 			.split(" ")
 			.joinToString(" ") { it.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } }
 
 		println(name + " / " + (healthEffects.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose"))
-		println(SS14Locale.getLocaleString(reagant.desc!!)!!)
+		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
 
 		// print all heal effects first
 		healthEffects.filter { it.healthValues().isNotEmpty() }
@@ -86,7 +86,7 @@ fun main(args: Array<String>) {
 			}
 
 		// print all other effects
-		val others = effects
+		effects
 			.filter { it !is HealthChange }
 			.forEach {
 				val condString = run {
