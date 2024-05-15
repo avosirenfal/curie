@@ -25,7 +25,7 @@ data class Metabolism(
 )
 
 @Serializable
-open class Effect(
+sealed class Effect(
     val conditions: List<Condition>? = null
 ) {
     companion object {
@@ -48,7 +48,8 @@ sealed class Condition {
     @SerialName("!type:ReagentThreshold")
     data class ReagentThreshold(
         val min: Double? = null,
-        val max: Double? = null
+        val max: Double? = null,
+        val reagant: String? = null
     ) : Condition()
 
     @Serializable
@@ -88,7 +89,7 @@ sealed class Condition {
 @SerialName("!type:GenericStatusEffect")
 data class GenericStatusEffect(
     var key: String,
-    var component: String
+    var component: String? = null
 ) : Effect()
 
 @Serializable
@@ -106,8 +107,8 @@ data class HealthChange(
 
 @Serializable
 data class HealthDamage(
-    var types: Map<String, Int>? = null,
-    var groups: Map<String, Int>? = null
+    var types: Map<String, Double>? = null,
+    var groups: Map<String, Double>? = null
 )
 
 @Serializable
@@ -117,8 +118,8 @@ class Jitter() : Effect()
 @Serializable
 @SerialName("!type:PopupMessage")
 data class PopupMessage(
-    var messageType: String,
-    var visualType: String,
+    var messageType: String? = null,
+    var visualType: String? = null,
     var messages: List<String>,
     var probability: Double
 ) : Effect()
@@ -132,11 +133,11 @@ data class ChemVomit(
 @Serializable
 @SerialName("!type:PlantAdjustToxins")
 data class PlantAdjustToxins(
-    var amount: Int
+    var amount: Double
 ) : Effect()
 
 @Serializable
 @SerialName("!type:PlantAdjustHealth")
 data class PlantAdjustHealth(
-    var amount: Int
+    var amount: Double
 ) : Effect()
