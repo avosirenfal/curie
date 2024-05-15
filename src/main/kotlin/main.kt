@@ -55,7 +55,7 @@ fun main(args: Array<String>) {
 	// note: default metabolic rate is 0.5
 
 	// TODO: metabolic rate
-	for (reagent in reagents["medicine.yml"]!!) {
+	for ((src, reagent) in reagents.entries.map { it.value.map { reagent -> it.key to reagent } }.flatten()) {
 		if(reagent.metabolisms == null)
 			continue
 
@@ -76,6 +76,8 @@ fun main(args: Array<String>) {
 
 			if(reagent.worksOnTheDead)
 				append(" / works on the dead")
+
+			append(" - $src")
 		})
 		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
 
@@ -113,7 +115,7 @@ fun main(args: Array<String>) {
 					if(it.conditions == null)
 						append("always")
 					else
-						append(it.conditions.joinToString(",") { it.humanDescription() })
+						append(it.conditions.joinToString(", ") { it.humanDescription() })
 
 					append(": ")
 					append(it.humanReadable())

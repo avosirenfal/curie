@@ -356,6 +356,14 @@ data class ModifyBleedAmount(
 }
 
 @Serializable
+@SerialName("!type:CauseZombieInfection")
+class CauseZombieInfection() : Effect() {
+    override fun humanReadable(): String {
+        return "cause zombie infection"
+    }
+}
+
+@Serializable
 @SerialName("!type:CureZombieInfection")
 class CureZombieInfection() : Effect() {
     override fun humanReadable(): String {
@@ -393,3 +401,80 @@ data class PlantAdjustHealth(
         return "PlantAdjustHealth"
     }
 }
+
+@Serializable
+@SerialName("!type:Polymorph")
+data class Polymorph(
+    val prototype: String,
+) : Effect() {
+    override fun humanReadable(): String {
+        return "polymorph prototype to $prototype"
+    }
+}
+
+@Serializable
+@SerialName("!type:ChemCleanBloodstream")
+data class ChemCleanBloodstream(
+    val cleanseRate: Double,
+) : Effect() {
+    override fun humanReadable(): String {
+        return "cleanse bloodstream by ${cleanseRate.hr()}"
+    }
+}
+
+@Serializable
+@SerialName("!type:Electrocute")
+class Electrocute() : Effect() {
+    override fun humanReadable(): String {
+        return "electrocute"
+    }
+}
+
+@Serializable
+@SerialName("!type:Oxygenate")
+class Oxygenate() : Effect() {
+    override fun humanReadable(): String {
+        return "oxygenate"
+    }
+}
+
+@Serializable
+@SerialName("!type:ModifyLungGas")
+data class ModifyLungGas(
+    val ratios: Map<String, Double>
+) : Effect() {
+    override fun humanReadable(): String {
+        val ratio_str = ratios.map {
+            if(it.value > 0)
+                return@map "add ${it.value.hr()} ${it.key} to lungs"
+            else
+                return@map "remove ${(it.value * -1).hr()} ${it.key} from lungs"
+        }
+
+        return ratio_str.joinToString(", ")
+    }
+}
+
+@Serializable
+@SerialName("!type:AdjustAlert")
+data class AdjustAlert(
+    val alertType: String,
+    val clear: Boolean,
+    val time: Double,
+) : Effect() {
+    override fun humanReadable(): String {
+        return "trigger alert type $alertType for ${time.hr()} seconds"
+    }
+}
+
+@Serializable
+@SerialName("!type:FlammableReaction")
+data class FlammableReaction(
+    val multiplier: Double,
+) : Effect() {
+    override fun humanReadable(): String {
+        return "flammable reaction with multiplier ${multiplier.hr()}"
+    }
+}
+
+
