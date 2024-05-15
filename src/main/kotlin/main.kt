@@ -28,7 +28,7 @@ fun HealthChange.overdoseString(): String? {
 
 	// must be triggered by too much of this specific reagent
 	val threshold = this.conditions[0] as Condition.ReagentThreshold
-	if(threshold.reagent != null || threshold.min == null)
+	if(threshold.reagent != null || threshold.min == null || threshold.min <= 0.0)
 		return null
 
 	val damageTypes = this.healthValues().filter { it.value > 0 }
@@ -75,7 +75,7 @@ fun main(args: Array<String>) {
 			append(healthEffects.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose")
 
 			if(reagent.worksOnTheDead)
-				append(" (works on the dead)")
+				append(" / works on the dead")
 		})
 		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
 
@@ -88,7 +88,7 @@ fun main(args: Array<String>) {
 					if(it.conditions == null)
 						append("always")
 					else
-						append(it.conditions.joinToString(",") { it.humanDescription() })
+						append(it.conditions.joinToString(", ") { it.humanDescription() })
 
 					append(": ")
 

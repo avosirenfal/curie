@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlin.math.abs
-import kotlin.math.round
 
 @Serializable
 data class Reagent(
@@ -136,7 +135,7 @@ sealed class Condition {
         val mobstate: String,
     ) : Condition(){
         override fun humanDescription(): String {
-            return "has mob state: $mobstate"
+            return "has mob state [$mobstate]"
         }
     }
 }
@@ -268,9 +267,22 @@ data class AdjustReagent(
 ) : Effect() {
     override fun humanReadable(): String {
         return if(amount > 0)
-            "adjust reagent adding ${amount.hr()}u ${SS14Locale.getLocaleString(reagent) ?: reagent}"
+            "add ${amount.hr()}u of reagent ${SS14Locale.getLocaleString(reagent) ?: reagent}"
         else
-            "adjust reagent removing ${(amount * -1).hr()}u ${SS14Locale.getLocaleString(reagent) ?: reagent}"
+            "remove ${(amount * -1).hr()}u of reagent ${SS14Locale.getLocaleString(reagent) ?: reagent}"
+    }
+}
+
+@Serializable
+@SerialName("!type:ModifyBloodLevel")
+data class ModifyBloodLevel(
+    val amount: Double,
+) : Effect() {
+    override fun humanReadable(): String {
+        return if(amount > 0)
+            "add ${amount.hr()} to blood level"
+        else
+            "remove ${(amount * -1).hr()} from blood level"
     }
 }
 
