@@ -166,34 +166,36 @@ sealed class Node {
 			}
 		}
 
-		private fun treeToString(node: Crafted, crafted: Set<String>, seen: Set<String> = setOf()): List<String> {
+		private fun treeToString(node: Crafted, crafted: Set<String>, seen: Set<String> = setOf()): Pair<List<String>, Set<String>> {
 			if(node.id in seen)
-				return listOf()
+				return listOf<String>() to seen
+
+			val newseen = (seen + setOf(node.id)).toMutableSet()
 
 			return buildList {
-				val newseen = seen + setOf(node.id)
 				add(node.stringify(crafted))
 
 				for(nodes in node.reagentSources.values) {
 					for(subnode in nodes) {
 						if(subnode is Crafted) {
-							addAll(treeToString(subnode, crafted, newseen))
+							val (add, saw) = treeToString(subnode, crafted, newseen)
+							addAll(add)
+							newseen.addAll(saw)
 						}
 					}
 				}
-			}.reversed()
+			}.reversed() to newseen
 		}
 
 		fun getRecipeList(id: String, data: SS14DataContainer, providedExternally: Set<String>): String {
 			val tree = getSourcesFor(id, data, providedExternally)
-
 
 			return tree.mapNotNull {
 				if (it is Crafted) {
 					val crafted = getComponentsFromTree(it, craftedOnly=true).toSet() + setOf(id)
 					val notCrafted = getComponentsFromTree(it, craftedOnly=false).toSet() - crafted
 					val buyString = "required: ${notCrafted.joinToString(", ") { id -> localizeReagentId(id) }}"
-					buyString + "\n   " + treeToString(it, crafted).joinToString("\n   ")
+					buyString + "\n   " + treeToString(it, crafted).first.joinToString("\n   ")
 				} else
 					null
 			}.joinToString("\n\n")
