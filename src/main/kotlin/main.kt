@@ -195,16 +195,19 @@ fun main(args: Array<String>) {
 	val jugSet = setOf("Aluminium", "Carbon", "Chlorine", "Copper", "Ethanol", "Fluorine", "Hydrogen", "Iodine", "Iron", "Lithium", "Mercury", "Nitrogen", "Oxygen", "Phosphorus", "Potassium", "Radium", "Silicon", "Sodium", "Sugar", "Sulfur", "Water", "Blood", "WeldingFuel", "Plasma")
 
 	for ((src, reagent) in reagents.entries.map { it.value.map { reagent -> it.key to reagent } }.flatten()) {
-		if(reagent.metabolisms == null)
+		if(reagent.abstract)
 			continue
 
-//		if(src != "narcotics.yml")
+//		if(reagent.metabolisms == null)
+//			continue
+
+//		if(src != "medicine.yml")
 //			continue
 
 		val metabolismLookup = reagent.metabolisms
-			.map { it.value.effects.map { eff -> eff to it.value  } }
-			.flatten().toMap()
-		val allEffects = reagent.metabolisms.map { it.value.effects }.flatten()
+			?.map { it.value.effects.map { eff -> eff to it.value  } }
+			?.flatten()?.toMap() ?: mapOf()
+		val allEffects = reagent.metabolisms?.map { it.value.effects }?.flatten() ?: listOf()
 
 		val name = SS14Locale.getLocaleString(reagent.name ?: "notfound")!!
 			.split(" ")

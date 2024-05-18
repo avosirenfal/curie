@@ -20,7 +20,8 @@ data class Reagent(
     val metabolisms: Map<String, Metabolism>? = null,
     val plantMetabolism: List<ReagentEffect>? = null,
     val worksOnTheDead: Boolean = false,
-    val recognizable: Boolean = false
+    val recognizable: Boolean = false,
+    val abstract: Boolean = false
 )
 
 @Serializable
@@ -107,10 +108,14 @@ sealed class Condition {
     @Serializable
     @SerialName("!type:OrganType")
     data class OrganType(
-        val type: String
+        val type: String,
+        val shouldHave: Boolean = true
     ) : Condition() {
         override fun humanDescription(): String {
-            return "with organ type: $type"
+            if(shouldHave)
+                return "with organ type: $type"
+            else
+                return "without organ type: $type"
         }
     }
 
