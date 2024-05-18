@@ -5,6 +5,7 @@ import ss14loaders.*
 import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.nameWithoutExtension
 import kotlin.io.path.readText
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -37,41 +38,8 @@ fun HealthChange.overdoseString(): String? {
 	if(damageTypes.isEmpty())
 		return null
 
-	// TODO: get heals
 	return "OD ${threshold.min.hr()}u"
 }
-
-//private fun Map<String, List<Reaction>>.getReactionsFor(id: String): List<Reaction> = this[id] ?: listOf()
-//
-//private fun Map.Entry<String, Double>.toHumanString(skip: Set<String>): String {
-//	if(key !in skip) {
-//		return value.hr() + " <" + SS14Locale.getLocaleStringSafe(key) + ">"
-//	} else {
-//		return value.hr() + " " + SS14Locale.getLocaleStringSafe(key)
-//	}
-//}
-//private fun Map<String, Double>.toHumanString(skip: Set<String>): String = this.map { it.toHumanString(skip) }.joinToString(", ")
-//private fun Map<String, ChemicalAmount>.conv(): Map<String, Double> =
-//	this.entries.associate { it.key to it.value.amount }
-//
-//private fun Reaction.toDescription(skip: Set<String>): String {
-//	return "${this.reactants.conv().toHumanString(skip)} -> ${this.products!!.toHumanString(skip)}"
-//}
-//private fun Map<String, List<Reaction>>.getReactionTreeFor(id: String, skip: Set<String>, seen: Set<String> = setOf()): List<String> {
-//	return buildList {
-//		for (reaction in getReactionsFor(id)) {
-//			val seen2 = seen + reaction.reactants.keys
-//			for(ingredient in reaction.reactants) {
-//				if(ingredient.key in seen || ingredient.key in skip)
-//					continue
-//
-//				addAll(getReactionTreeFor(ingredient.key, skip, seen2))
-//			}
-//
-//			add(reaction.toDescription(skip))
-//		}
-//	}
-//}
 
 class SS14DataContainer(
 	val reactions: Map<String, List<Reaction>>,
@@ -226,13 +194,12 @@ fun main(args: Array<String>) {
 	SS14.setContainer(data)
 	val jugSet = setOf("Aluminium", "Carbon", "Chlorine", "Copper", "Ethanol", "Fluorine", "Hydrogen", "Iodine", "Iron", "Lithium", "Mercury", "Nitrogen", "Oxygen", "Phosphorus", "Potassium", "Radium", "Silicon", "Sodium", "Sugar", "Sulfur", "Water", "Blood", "WeldingFuel", "Plasma")
 
-	// TODO: metabolic rate
 	for ((src, reagent) in reagents.entries.map { it.value.map { reagent -> it.key to reagent } }.flatten()) {
 		if(reagent.metabolisms == null)
 			continue
 
-		if(src != "medicine.yml")
-			continue
+//		if(src != "narcotics.yml")
+//			continue
 
 		val metabolismLookup = reagent.metabolisms
 			.map { it.value.effects.map { eff -> eff to it.value  } }
@@ -248,9 +215,10 @@ fun main(args: Array<String>) {
 			append(" / ")
 			append(allEffects.filterIsInstance<HealthChange>().firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose")
 
-			if(reagent.worksOnTheDead)
-				append(" / works on the dead")
+			append(" [${Path(src).nameWithoutExtension}]")
 		})
+		if(reagent.worksOnTheDead)
+			println("(works on the dead)")
 		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
 //		println("    " + reactionLookup.getReactionTreeFor(reagent.id, jugSet).joinToString("\n    "))
 
