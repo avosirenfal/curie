@@ -19,7 +19,8 @@ data class Reagent(
     val color: String? = null,
     val metabolisms: Map<String, Metabolism>? = null,
     val plantMetabolism: List<Effect>? = null,
-    val worksOnTheDead: Boolean = false
+    val worksOnTheDead: Boolean = false,
+    val recognizable: Boolean = false
 )
 
 @Serializable
@@ -162,6 +163,7 @@ data class GenericStatusEffect(
         return when(type) {
             null -> "inflict${time}generic status effect $name"
             "Remove" -> "removes${time}generic status effect $name"
+            "Add" -> "adds${time}generic status effect $name"
             else -> "$type${time}generic status effect $name"
         }
     }
@@ -253,9 +255,9 @@ data class AdjustTemperature(
 ) : Effect() {
     override fun humanReadable(): String {
         return if(amount > 0)
-            "temperature +${amount.hr()}K"
+            "+${amount.hr()} thermal energy"
         else
-            "temperature -${(amount * -1).hr()}K"
+            "-${(amount * -1).hr()} thermal energy"
     }
 }
 

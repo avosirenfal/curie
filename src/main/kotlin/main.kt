@@ -59,6 +59,9 @@ fun main(args: Array<String>) {
 		if(reagent.metabolisms == null)
 			continue
 
+		if(src != "medicine.yml")
+			continue
+
 		val metabolismLookup = reagent.metabolisms
 			.map { it.value.effects.map { eff -> eff to it.value  } }
 			.flatten().toMap()
@@ -77,9 +80,11 @@ fun main(args: Array<String>) {
 			if(reagent.worksOnTheDead)
 				append(" / works on the dead")
 
-			append(" - $src")
+//			append(" - $src")
 		})
 		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
+//		if(!reagent.recognizable && reagent.physicalDesc != null)
+//			println("    physical descrption: " + SS14Locale.getLocaleString(reagent.physicalDesc)!!)
 
 		// print all heal effects first
 		healthEffects.filter { it.healthValues().isNotEmpty() }
