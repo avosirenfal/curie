@@ -58,8 +58,6 @@ fun main(args: Array<String>) {
 		it.fileName.toString() to yaml.decodeFromString<List<Reaction>>(it.readText().trim())
 	}
 
-	// note: default metabolic rate is 0.5
-
 	// TODO: metabolic rate
 	for ((src, reagent) in reagents.entries.map { it.value.map { reagent -> it.key to reagent } }.flatten()) {
 		if(reagent.metabolisms == null)
@@ -72,7 +70,6 @@ fun main(args: Array<String>) {
 			.map { it.value.effects.map { eff -> eff to it.value  } }
 			.flatten().toMap()
 		val allEffects = reagent.metabolisms.map { it.value.effects }.flatten()
-		val healthEffects = allEffects.filterIsInstance<HealthChange>()
 
 		val name = SS14Locale.getLocaleString(reagent.name ?: "notfound")!!
 			.split(" ")
@@ -81,47 +78,23 @@ fun main(args: Array<String>) {
 		println(buildString {
 			append(name)
 			append(" / ")
-			append(healthEffects.firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose")
+			append(allEffects.filterIsInstance<HealthChange>().firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose")
 
 			if(reagent.worksOnTheDead)
 				append(" / works on the dead")
-
-//			append(" - $src")
 		})
 		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
 //		if(!reagent.recognizable && reagent.physicalDesc != null)
 //			println("    physical descrption: " + SS14Locale.getLocaleString(reagent.physicalDesc)!!)
 
-		// print all heal effects first
-		healthEffects.filter { it.healthValues().isNotEmpty() }
-			.forEach {
-				println(buildString {
-					append("    * ")
-
-					if(it.conditions == null)
-						append("always")
-					else
-						append(it.conditions.joinToString(", ") { it.humanDescription() })
-
-					append(": ")
-
-					append(it.healthValues().map {
-						val value = it.value * -1
-
-						if(value > 0)
-							"heals ${value.hr()} ${it.key}"
-						else
-							"inflicts ${(value * -1).hr()} ${it.key} damage"
-					}.joinToString(", "))
-				})
-			}
-
-		// print all other effects
 		allEffects
-			.filter { it !is HealthChange }
+			.sortedBy { it !is HealthChange }
 			.forEach {
 				println(buildString {
-					append("    - ")
+					if(it is HealthChange)
+						append("    * ")
+					else
+						append("    - ")
 
 					if(it.conditions == null)
 						append("always")

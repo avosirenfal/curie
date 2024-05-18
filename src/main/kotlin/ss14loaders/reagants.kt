@@ -25,7 +25,7 @@ data class Reagent(
 
 @Serializable
 data class Metabolism(
-    val metabolismRate: Double? = null,
+    val metabolismRate: Double = 0.5,
     val effects: List<ReagentEffect>
 )
 
@@ -183,8 +183,18 @@ data class Drunk(
 data class HealthChange(
     val damage: HealthDamage,
 ) : ReagentEffect() {
+    fun healthValues(): Map<String, Double> =
+        ((this.damage.groups ?: mapOf()).entries + (this.damage.types ?: mapOf()).entries).associate { it.key to it.value }
+
     override fun humanReadable(): String {
-        return "healthchange"
+        return this.healthValues().map {
+            val value = it.value * -1
+
+            if(value > 0)
+                "heals ${value.hr()} ${it.key}"
+            else
+                "inflicts ${(value * -1).hr()} ${it.key} damage"
+        }.joinToString(", ")
     }
 }
 
