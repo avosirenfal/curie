@@ -5,7 +5,6 @@ import ss14loaders.*
 import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
-import kotlin.io.path.nameWithoutExtension
 import kotlin.io.path.readText
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -64,17 +63,18 @@ private fun localizeReagentId(id: String): String {
 }
 
 sealed class Node {
+	abstract val id: String
 	/**
 	 * item should come from a jug or otherwise be provided - it cannot be crafted with chemistry
 	 */
-	class Provided(val id: String) : Node()
+	class Provided(override val id: String) : Node()
 
 	/**
 	 * this should be crafted with chemistry
 	 *
 	 * note: we need to know the entire set of craftables to resolve this to a string later
 	 */
-	class Crafted(val id: String, val reaction: Reaction, val reagentSources: Map<String, List<Node>>) : Node() {
+	class Crafted(override val id: String, val reaction: Reaction, val reagentSources: Map<String, List<Node>>) : Node() {
 		// must be generated from the tree first + list of jugs
 		fun stringify(crafted: Set<String>): String {
 			fun String.desc(quantity: Double): String {
@@ -134,42 +134,110 @@ sealed class Node {
 			}
 		}
 
-		private fun treeToString(node: Crafted, crafted: Set<String>, seen: Set<String> = setOf()): Pair<List<String>, Set<String>> {
+		private fun Map<String, Int>.updateIt(id: String, depth: Int): Map<String, Int> {
+			val current = this[id]
+
+			return if(current == null || depth > current) {
+				val copy = this.toMutableMap()
+				copy[id] = depth
+				copy
+			} else {
+				this
+			}
+		}
+
+		private fun getTreeDepths(node: Node, depth: Int=0, found: Map<String, Int> = mapOf()): Map<String, Int> {
+			return when(node) {
+				is Provided -> found.updateIt(node.id, depth)
+				is Crafted -> {
+					var h = found.updateIt(node.id, depth)
+					val d = depth+1
+
+					node.reagentSources.keys.forEach {
+						h = h.updateIt(it, d)
+					}
+					val children = node.reagentSources.filter { it.key !in found }
+					for(v in children) {
+						for(item in v.value) {
+							h = getTreeDepths(item, d + 1, h)
+						}
+					}
+
+					return h
+				}
+			}
+		}
+
+		private data class ResultString(val productid: String, val line: String)
+		private data class TreeStringResult(val items: List<ResultString>, val seen: Set<String>)
+		private fun treeToString(node: Crafted, crafted: Set<String>, seen: Set<String> = setOf()): TreeStringResult {
 			if(node.id in seen)
-				return listOf<String>() to seen
+				return TreeStringResult(listOf(), setOf())
 
 			val newseen = (seen + setOf(node.id)).toMutableSet()
 
-			return buildList {
-				add(node.stringify(crafted))
+			return TreeStringResult(
+				buildList {
+					add(ResultString(node.id, node.stringify(crafted)))
 
-				for(nodes in node.reagentSources.values) {
-					for(subnode in nodes) {
-						if(subnode is Crafted) {
-							val (add, saw) = treeToString(subnode, crafted, newseen)
-							addAll(add)
-							newseen.addAll(saw)
+					for(nodes in node.reagentSources.values) {
+						for(subnode in nodes) {
+							if(subnode is Crafted) {
+								val res = treeToString(subnode, crafted, newseen)
+								addAll(res.items)
+								newseen.addAll(res.seen)
+							}
 						}
 					}
-				}
-			}.reversed() to newseen
+				}.reversed(),
+				seen
+			)
 		}
 
 		fun getRecipeList(id: String, data: SS14DataContainer, providedExternally: Set<String>): String {
 			val tree = getSourcesFor(id, data, providedExternally)
 
-			return tree.mapNotNull {
-				if (it is Crafted) {
-					val crafted = getComponentsFromTree(it, craftedOnly=true).toSet() + setOf(id)
-					val notCrafted = getComponentsFromTree(it, craftedOnly=false).toSet() - crafted
-					val buyString = "required: ${notCrafted.joinToString(", ") { id -> localizeReagentId(id) }}"
-					buyString + "\n   " + treeToString(it, crafted).first.joinToString("\n   ")
+			return tree.mapNotNull { node ->
+				if (node is Crafted) {
+					val sort = getTreeDepths(node)
+ 					val crafted = getComponentsFromTree(node, craftedOnly=true).toSet() + setOf(id)
+					val notCrafted = (getComponentsFromTree(node, craftedOnly=false).toSet() - crafted)
+						.joinToString(", ") { id ->
+							val name = localizeReagentId(id)
+							val source = sources.get(id)
+
+							if(source != null)
+								"$name [$source]"
+							else
+								name
+						}
+					val buyString = "required: $notCrafted"
+
+					val hit = mutableSetOf<String>()
+					val results = treeToString(node, crafted).items
+						.sortedBy { sort[it.productid] ?: 1 }
+						.reversed()
+						// TODO: I don't want to figure out why we occasionally get duplicates
+						.filter { hit.add(it.line) }
+						.joinToString("\n   ") { it.line }
+
+					"$buyString\n   $results"
 				} else
 					null
 			}.joinToString("\n\n")
 		}
 	}
 }
+
+val jugSet = setOf("Aluminium", "Carbon", "Chlorine", "Copper", "Ethanol", "Fluorine", "Hydrogen", "Iodine", "Iron", "Lithium", "Mercury", "Nitrogen", "Oxygen", "Phosphorus", "Potassium", "Radium", "Silicon", "Sodium", "Sugar", "Sulfur", "Water", "Blood", "WeldingFuel", "Plasma")
+val sources = mapOf(
+	"P" to setOf("Aluminium", "Carbon", "Chlorine", "Fluorine", "Iodine", "Phosphorus", "Sulfur", "Silicon", "Oxygen", "Nitrogen"),
+	"S" to setOf("Hydrogen", "Lithium", "Sodium", "Potassium", "Radium", "Sugar", "Ethanol"),
+	"D" to setOf("Iron", "Copper", "Gold", "Mercury", "Silver"),
+	"Syndicate" to setOf("Vestine"),
+	"Botany" to setOf("Omnizine", "Stellibinin", "Aloe"),
+	"Grind" to setOf("Plasma", "Uranium")
+).flatMap { x -> x.value.map { it to x.key } }.toMap()
 
 // TODO: read body/organs/X and do results on a per-race basis
 fun main(args: Array<String>) {
@@ -192,7 +260,6 @@ fun main(args: Array<String>) {
 
 	val data = SS14DataContainer(reactionLookup, reagents.flatMap { it.value }.associateBy { it.id })
 	SS14.setContainer(data)
-	val jugSet = setOf("Aluminium", "Carbon", "Chlorine", "Copper", "Ethanol", "Fluorine", "Hydrogen", "Iodine", "Iron", "Lithium", "Mercury", "Nitrogen", "Oxygen", "Phosphorus", "Potassium", "Radium", "Silicon", "Sodium", "Sugar", "Sulfur", "Water", "Blood", "WeldingFuel", "Plasma")
 
 	for ((src, reagent) in reagents.entries.map { it.value.map { reagent -> it.key to reagent } }.flatten()) {
 		if(reagent.abstract)
@@ -201,8 +268,8 @@ fun main(args: Array<String>) {
 //		if(reagent.metabolisms == null)
 //			continue
 
-//		if(src != "medicine.yml")
-//			continue
+		if(src != "medicine.yml")
+			continue
 
 		val metabolismLookup = reagent.metabolisms
 			?.map { it.value.effects.map { eff -> eff to it.value  } }
@@ -218,7 +285,7 @@ fun main(args: Array<String>) {
 			append(" / ")
 			append(allEffects.filterIsInstance<HealthChange>().firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose")
 
-			append(" [${Path(src).nameWithoutExtension}]")
+//			append(" [${Path(src).nameWithoutExtension}]")
 		})
 		if(reagent.worksOnTheDead)
 			println("(works on the dead)")
