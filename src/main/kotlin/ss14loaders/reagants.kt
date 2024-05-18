@@ -18,7 +18,7 @@ data class Reagent(
     val flavor: String? = null,
     val color: String? = null,
     val metabolisms: Map<String, Metabolism>? = null,
-    val plantMetabolism: List<Effect>? = null,
+    val plantMetabolism: List<ReagentEffect>? = null,
     val worksOnTheDead: Boolean = false,
     val recognizable: Boolean = false
 )
@@ -26,21 +26,19 @@ data class Reagent(
 @Serializable
 data class Metabolism(
     val metabolismRate: Double? = null,
-    val effects: List<Effect>
+    val effects: List<ReagentEffect>
 )
 
 @Serializable
-sealed class Effect(
-    val probability: Double? = null,
+sealed class ReagentEffect(
+    val probability: Double = 1.0,
     val conditions: List<Condition>? = null
 ) {
     abstract fun humanReadable(): String
 
     companion object {
         val serialModule = SerializersModule {
-            this.polymorphic(Effect::class) {
-//                subclass(Cat::class)
-//                subclass(Dog::class)
+            this.polymorphic(ReagentEffect::class) {
                 defaultDeserializer { UnknownEffect.serializer() }
             }
         }
@@ -48,7 +46,7 @@ sealed class Effect(
 }
 
 @Serializable
-class UnknownEffect : Effect() {
+class UnknownEffect : ReagentEffect() {
     override fun humanReadable(): String = "unknown/unhandled"
 }
 
@@ -148,7 +146,7 @@ data class GenericStatusEffect(
     val component: String? = null,
     val time: Double? = null,
     val type: String? = null
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         val name = run {
             if(key == component)
@@ -174,7 +172,7 @@ data class GenericStatusEffect(
 data class Drunk(
     val slurSpeech: Boolean? = null,
     val boozePower: Int? = null,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "inflicts drunk"
     }
@@ -184,7 +182,7 @@ data class Drunk(
 @SerialName("!type:HealthChange")
 data class HealthChange(
     val damage: HealthDamage,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "healthchange"
     }
@@ -195,7 +193,7 @@ data class HealthChange(
 data class MovespeedModifier(
     val walkSpeedModifier: Double?,
     val sprintSpeedModifier: Double?,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         val msgs = mutableListOf<String>()
 
@@ -221,7 +219,7 @@ data class HealthDamage(
 
 @Serializable
 @SerialName("!type:Jitter")
-class Jitter() : Effect() {
+class Jitter() : ReagentEffect() {
     override fun humanReadable(): String {
         return "inflict jitter"
     }
@@ -234,7 +232,7 @@ data class PopupMessage(
     val messageType: String? = null,
     val visualType: String? = null,
     val messages: List<String>,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "popup message: ${messages.joinToString(" / ") { "\"" + (SS14Locale.getLocaleString(it) ?: it)  + "\"" } }"
     }
@@ -242,7 +240,7 @@ data class PopupMessage(
 
 @Serializable
 @SerialName("!type:ChemVomit")
-class ChemVomit() : Effect() {
+class ChemVomit() : ReagentEffect() {
     override fun humanReadable(): String {
         return "inflicts vomit"
     }
@@ -252,7 +250,7 @@ class ChemVomit() : Effect() {
 @SerialName("!type:AdjustTemperature")
 data class AdjustTemperature(
     val amount: Double
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return if(amount > 0)
             "+${amount.hr()} thermal energy"
@@ -266,7 +264,7 @@ data class AdjustTemperature(
 data class AdjustReagent(
     val amount: Double,
     val reagent: String
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return if(amount > 0)
             "add ${amount.hr()}u of reagent ${SS14Locale.getLocaleString(reagent) ?: reagent}"
@@ -279,7 +277,7 @@ data class AdjustReagent(
 @SerialName("!type:ModifyBloodLevel")
 data class ModifyBloodLevel(
     val amount: Double,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return if(amount > 0)
             "add ${amount.hr()} to blood level"
@@ -292,7 +290,7 @@ data class ModifyBloodLevel(
 @SerialName("!type:SatiateThirst")
 data class SatiateThirst(
     val factor: Double? = null,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         if(factor == null)
             return "satiate thirst (completely? 1u? unclear!)"
@@ -308,7 +306,7 @@ data class SatiateThirst(
 @SerialName("!type:SatiateHunger")
 data class SatiateHunger(
     val factor: Double? = null,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         if(factor == null)
             return "satiate hunger (completely? 1u? unclear!)"
@@ -322,7 +320,7 @@ data class SatiateHunger(
 
 @Serializable
 @SerialName("!type:ChemHealEyeDamage")
-class ChemHealEyeDamage() : Effect() {
+class ChemHealEyeDamage() : ReagentEffect() {
     override fun humanReadable(): String {
         return "heal eye damage"
     }
@@ -330,7 +328,7 @@ class ChemHealEyeDamage() : Effect() {
 
 @Serializable
 @SerialName("!type:MakeSentient")
-class MakeSentient() : Effect() {
+class MakeSentient() : ReagentEffect() {
     override fun humanReadable(): String {
         return "causes sentience"
     }
@@ -338,7 +336,7 @@ class MakeSentient() : Effect() {
 
 @Serializable
 @SerialName("!type:ResetNarcolepsy")
-class ResetNarcolepsy() : Effect() {
+class ResetNarcolepsy() : ReagentEffect() {
     override fun humanReadable(): String {
         return "reset narcolepsy"
     }
@@ -348,7 +346,7 @@ class ResetNarcolepsy() : Effect() {
 @SerialName("!type:ModifyBleedAmount")
 data class ModifyBleedAmount(
     val amount: Double,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return if(amount > 0)
             "cause ${amount.hr()} bleeding"
@@ -359,7 +357,7 @@ data class ModifyBleedAmount(
 
 @Serializable
 @SerialName("!type:CauseZombieInfection")
-class CauseZombieInfection() : Effect() {
+class CauseZombieInfection() : ReagentEffect() {
     override fun humanReadable(): String {
         return "cause zombie infection"
     }
@@ -367,7 +365,7 @@ class CauseZombieInfection() : Effect() {
 
 @Serializable
 @SerialName("!type:CureZombieInfection")
-class CureZombieInfection() : Effect() {
+class CureZombieInfection() : ReagentEffect() {
     override fun humanReadable(): String {
         return "cure zombie infection"
     }
@@ -378,7 +376,7 @@ class CureZombieInfection() : Effect() {
 @SerialName("!type:Emote")
 data class Emote(
     val emote: String,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "causes emote $emote"
     }
@@ -388,7 +386,7 @@ data class Emote(
 @SerialName("!type:PlantAdjustToxins")
 data class PlantAdjustToxins(
     val amount: Double
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "PlantAdjustToxins"
     }
@@ -398,7 +396,7 @@ data class PlantAdjustToxins(
 @SerialName("!type:PlantAdjustHealth")
 data class PlantAdjustHealth(
     val amount: Double
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "PlantAdjustHealth"
     }
@@ -408,7 +406,7 @@ data class PlantAdjustHealth(
 @SerialName("!type:Polymorph")
 data class Polymorph(
     val prototype: String,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "polymorph prototype to $prototype"
     }
@@ -418,7 +416,7 @@ data class Polymorph(
 @SerialName("!type:ChemCleanBloodstream")
 data class ChemCleanBloodstream(
     val cleanseRate: Double,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "cleanse bloodstream by ${cleanseRate.hr()}"
     }
@@ -426,7 +424,7 @@ data class ChemCleanBloodstream(
 
 @Serializable
 @SerialName("!type:Electrocute")
-class Electrocute() : Effect() {
+class Electrocute() : ReagentEffect() {
     override fun humanReadable(): String {
         return "electrocute"
     }
@@ -434,7 +432,7 @@ class Electrocute() : Effect() {
 
 @Serializable
 @SerialName("!type:Oxygenate")
-class Oxygenate() : Effect() {
+class Oxygenate() : ReagentEffect() {
     override fun humanReadable(): String {
         return "oxygenate"
     }
@@ -444,7 +442,7 @@ class Oxygenate() : Effect() {
 @SerialName("!type:ModifyLungGas")
 data class ModifyLungGas(
     val ratios: Map<String, Double>
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         val ratio_str = ratios.map {
             if(it.value > 0)
@@ -463,7 +461,7 @@ data class AdjustAlert(
     val alertType: String,
     val clear: Boolean,
     val time: Double,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "trigger alert type $alertType for ${time.hr()} seconds"
     }
@@ -473,7 +471,7 @@ data class AdjustAlert(
 @SerialName("!type:FlammableReaction")
 data class FlammableReaction(
     val multiplier: Double,
-) : Effect() {
+) : ReagentEffect() {
     override fun humanReadable(): String {
         return "flammable reaction with multiplier ${multiplier.hr()}"
     }

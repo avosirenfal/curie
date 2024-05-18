@@ -14,7 +14,7 @@ val yaml = Yaml(
 		polymorphismStyle = PolymorphismStyle.Tag
 	),
 	serializersModule = SerializersModule {
-		include(Effect.serialModule)
+		include(ReagentEffect.serialModule)
 	}
 )
 
@@ -45,12 +45,18 @@ fun main(args: Array<String>) {
 	val ss14_path = Path(args[0])
 	val prototypes_path = Path(ss14_path.toString(), "Resources", "Prototypes")
 	val reagents_path = Path(prototypes_path.toString(), "Reagents")
+	val reactions_path = Path(prototypes_path.toString(), "Recipes", "Reactions")
 	SS14Locale.loadAllFromPath(Path(ss14_path.toString(), "Resources", "Locale", "en-US"))
 
-	val reagents = reagents_path.listDirectoryEntries("*.yml").map {
+	val reagents = reagents_path.listDirectoryEntries("*.yml").associate {
 //		println(it)
 		it.fileName.toString() to yaml.decodeFromString<List<Reagent>>(it.readText())
-	}.toMap()
+	}
+
+	val reactions = reactions_path.listDirectoryEntries("*.yml").associate {
+		println(it)
+		it.fileName.toString() to yaml.decodeFromString<List<Reaction>>(it.readText().trim())
+	}
 
 	// note: default metabolic rate is 0.5
 
@@ -125,7 +131,7 @@ fun main(args: Array<String>) {
 					append(": ")
 					append(it.humanReadable())
 
-					if(it.probability != null)
+					if(it.probability != 1.0)
 						append(" (${(it.probability * 100).hr()}% chance)")
 				})
 			}
