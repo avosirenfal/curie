@@ -33,6 +33,7 @@ object SS14Locale {
 	private val locale = mutableMapOf<String, String>()
 
 	fun getLocaleString(key: String): String? = locale[key]
+	fun getLocaleStringSafe(key: String): String = locale[key] ?: key
 
 	fun loadAllFromPath(path: Path) {
 		locale.putAll(loadAllLocaleFromPath(path))
