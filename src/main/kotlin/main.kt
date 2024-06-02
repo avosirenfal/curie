@@ -253,9 +253,10 @@ fun main(args: Array<String>) {
 		it.fileName.toString() to yaml.decodeFromString<List<Reagent>>(it.readText())
 	}
 
-	val reactionLookup = reactions_path
+	val reactions = reactions_path
 		.listDirectoryEntries("*.yml")
 		.flatMap { yaml.decodeFromString<List<Reaction>>(it.readText().trim()) }
+	val reactionLookup = reactions
 		.flatMap { it.products?.map { (product, _) -> product to it } ?: listOf() }
 		.groupBy({it.first}, {it.second})
 
@@ -334,6 +335,61 @@ fun main(args: Array<String>) {
 			println(recipes)
 		}
 
+		println()
+	}
+
+	val nonReagentReactions = reactions
+		.filter { (it.products?.size ?: 0) == 0 }
+
+	println("--------------------")
+
+	for (reaction in nonReagentReactions) {
+		val name = SS14Locale.getLocaleStringSafe(reaction.id)
+		val allEffects = reaction.effects ?: continue
+
+		println(buildString {
+			append(name)
+			append(" / Reaction")
+
+//			append(" [${Path(src).nameWithoutExtension}]")
+		})
+
+		allEffects
+			.sortedBy { it !is HealthChange }
+			.forEach {
+				println(buildString {
+					if(it is HealthChange)
+						append("    * ")
+					else
+						append("    - ")
+
+					if(it.conditions == null)
+						append("always")
+					else
+						append(it.conditions.joinToString(", ") { it.humanDescription() })
+
+					append(": ")
+					append(it.humanReadable())
+
+					if(it.probability != 1.0)
+						append(" (${(it.probability * 100).hr()}% chance)")
+				})
+			}
+
+		println()
+		println("    reactants:")
+
+		val reactants = reaction.reactants.map {
+			buildString {
+				append(it.value.amount.hr())
+				append(" " + SS14Locale.getLocaleStringSafe(it.key))
+
+				if(it.value.catalyst == true)
+					append(" <catalyst>")
+			}
+		}
+
+		println("        - " + reactants.joinToString("\n        - "))
 		println()
 	}
 }

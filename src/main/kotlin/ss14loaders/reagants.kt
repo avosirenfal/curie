@@ -503,5 +503,3 @@ data class FlammableReaction(
         return "flammable reaction with multiplier ${multiplier.hr()}"
     }
 }
-
-

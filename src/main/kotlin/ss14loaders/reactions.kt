@@ -1,11 +1,9 @@
 package ss14loaders
 
+import SS14
 import hr
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import java.time.Duration
 
 @Serializable
 data class Reaction(
@@ -30,14 +28,15 @@ data class Reaction(
 	val source: Boolean = false,
 	val conserveEnergy: Boolean = true,
 	val requiredMixerCategories: List<String>? = null,
-	val reactants: Map<String, ChemicalAmount>,
+	val reactants: Map<String, Reactant>,
 	val products: Map<String, Double>? = null,
 	val effects: List<ReagentEffect>? = null,
 )
 
 @Serializable
-data class ChemicalAmount(
-	val amount: Double
+data class Reactant(
+	val amount: Double,
+	val catalyst: Boolean? = false
 )
 
 @Serializable
@@ -50,7 +49,7 @@ data class ExplosionReactionEffect(
 	val maxTotalIntensity: Double = 100.0,
 ) : ReagentEffect() {
 	override fun humanReadable(): String {
-		return "explodes!!"
+		return "explodes!!" // todo
 	}
 }
 
@@ -61,6 +60,29 @@ data class AreaReactionEffect(
 	val duration: Double = 10.0,
 ) : ReagentEffect() {
 	override fun humanReadable(): String {
-		return "area reaction of $prototypeId for ${duration.hr()} seconds"
+		return "area reaction of ${SS14Locale.getLocaleStringSafe(prototypeId)} for ${duration.hr()} seconds"
+	}
+}
+
+@Serializable
+@SerialName("!type:EmpReactionEffect")
+data class EmpReactionEffect(
+	val rangePerUnit: Double = 0.5,
+	val maxRange: Double = 10.0,
+	val energyConsumption: Double = 12500.0,
+	val duration: Double = 15.0,
+) : ReagentEffect() {
+	override fun humanReadable(): String {
+		return "${duration.hr()} second EMP that drains ${energyConsumption.hr()} energy, at ${rangePerUnit.hr()} range per unit up to a maxium of ${maxRange.hr()} range"
+	}
+}
+
+@Serializable
+@SerialName("!type:CreateEntityReactionEffect")
+data class CreateEntityReactionEffect(
+	val entity: String,
+) : ReagentEffect() {
+	override fun humanReadable(): String {
+		return "create entity ${SS14Locale.getLocaleStringSafe(entity)}"
 	}
 }
