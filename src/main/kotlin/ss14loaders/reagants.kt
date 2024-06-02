@@ -82,6 +82,18 @@ sealed class Condition {
     }
 
     @Serializable
+    @SerialName("!type:Hunger")
+    data class Hunger(
+        val min: Double? = null,
+        val max: Double? = null,
+    ) : Condition() {
+        override fun humanDescription(): String {
+            return minMaxString(min, max, " hunger") ?: "Hunger unclear"
+        }
+    }
+
+
+    @Serializable
     @SerialName("!type:TotalDamage")
     data class TotalDamage(
         val max: Double? = null,

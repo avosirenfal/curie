@@ -5,6 +5,7 @@ import ss14loaders.*
 import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.nameWithoutExtension
 import kotlin.io.path.readText
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -268,8 +269,8 @@ fun main(args: Array<String>) {
 //		if(reagent.metabolisms == null)
 //			continue
 
-		if(src != "medicine.yml")
-			continue
+//		if(src != "medicine.yml")
+//			continue
 
 		val metabolismLookup = reagent.metabolisms
 			?.map { it.value.effects.map { eff -> eff to it.value  } }
@@ -285,11 +286,13 @@ fun main(args: Array<String>) {
 			append(" / ")
 			append(allEffects.filterIsInstance<HealthChange>().firstOrNull { it.overdoseString() != null }?.overdoseString() ?: "Cannot Overdose")
 
-//			append(" [${Path(src).nameWithoutExtension}]")
+			append(" [${Path(src).nameWithoutExtension}]")
 		})
+
 		if(reagent.worksOnTheDead)
 			println("(works on the dead)")
-		println(SS14Locale.getLocaleString(reagent.desc!!)!!)
+
+		println(reagent.desc?.let { SS14Locale.getLocaleString(it) } ?: "No description.")
 //		println("    " + reactionLookup.getReactionTreeFor(reagent.id, jugSet).joinToString("\n    "))
 
 //		if(!reagent.recognizable && reagent.physicalDesc != null)
@@ -322,8 +325,14 @@ fun main(args: Array<String>) {
 				})
 			}
 
-		println()
-		println(Node.getRecipeList(reagent.id, data, jugSet).prependIndent("    "))
+		val recipes = Node.getRecipeList(reagent.id, data, jugSet).prependIndent("    ")
+
+		if(recipes.trim().isNotEmpty()) {
+			if(allEffects.isNotEmpty())
+				println()
+
+			println(recipes)
+		}
 
 		println()
 	}
