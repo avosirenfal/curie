@@ -351,6 +351,16 @@ fun main(args: Array<String>) {
 			append(name)
 			append(" / Reaction")
 
+			val temp = mutableListOf<String>()
+			if(reaction.minTemp > 0)
+				temp.add("min temp: ${reaction.minTemp.hr()}")
+
+			if(reaction.maxTemp != Double.POSITIVE_INFINITY)
+				temp.add("max temp: ${reaction.maxTemp.hr()}")
+
+			if(temp.isNotEmpty())
+				append(" (${temp.joinToString(", ")})")
+
 //			append(" [${Path(src).nameWithoutExtension}]")
 		})
 
