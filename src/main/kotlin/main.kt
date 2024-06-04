@@ -19,9 +19,6 @@ val yaml = Yaml(
 	}
 )
 
-fun HealthChange.healthValues(): Map<String, Double> =
-	((this.damage.groups ?: mapOf()).entries + (this.damage.types ?: mapOf()).entries).associate { it.key to it.value }
-
 fun HealthChange.overdoseString(): String? {
 	if(this.conditions == null || this.conditions.size != 1
 		|| this.conditions[0] !is Condition.ReagentThreshold)
@@ -242,6 +239,7 @@ val sources = mapOf(
 
 // TODO: read body/organs/X and do results on a per-race basis
 fun main(args: Array<String>) {
+	val meds_only = true
 	val ss14_path = Path(args[0])
 	val prototypes_path = Path(ss14_path.toString(), "Resources", "Prototypes")
 	val reagents_path = Path(prototypes_path.toString(), "Reagents")
@@ -267,6 +265,23 @@ fun main(args: Array<String>) {
 		if(reagent.abstract)
 			continue
 
+		val allEffects = reagent.metabolisms?.map { it.value.effects }?.flatten() ?: listOf()
+
+		if(meds_only) {
+			if(reagent.metabolisms == null)
+				continue
+
+			if(src != "medicine.yml") {
+				val heals = allEffects
+					.filterIsInstance<HealthChange>()
+					.filter { it.conditions == null }
+					.any { it.healthValues().values.any {it < 0} }
+
+				if(!heals)
+					continue
+			}
+		}
+
 //		if(reagent.metabolisms == null)
 //			continue
 
@@ -276,7 +291,6 @@ fun main(args: Array<String>) {
 		val metabolismLookup = reagent.metabolisms
 			?.map { it.value.effects.map { eff -> eff to it.value  } }
 			?.flatten()?.toMap() ?: mapOf()
-		val allEffects = reagent.metabolisms?.map { it.value.effects }?.flatten() ?: listOf()
 
 		val name = SS14Locale.getLocaleString(reagent.name ?: "notfound")!!
 			.split(" ")
@@ -337,6 +351,9 @@ fun main(args: Array<String>) {
 
 		println()
 	}
+
+	if(meds_only)
+		return
 
 	val nonReagentReactions = reactions
 		.filter { (it.products?.size ?: 0) == 0 }
