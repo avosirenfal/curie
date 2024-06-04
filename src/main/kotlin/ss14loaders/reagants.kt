@@ -503,3 +503,13 @@ data class FlammableReaction(
         return "flammable reaction with multiplier ${multiplier.hr()}"
     }
 }
+
+@Serializable
+@SerialName("!type:ReduceRotting")
+data class ReduceRotting(
+    val seconds: Double,
+) : ReagentEffect() {
+    override fun humanReadable(): String {
+        return "reduces rotting time by ${seconds.hr()} seconds"
+    }
+}
