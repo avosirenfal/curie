@@ -316,12 +316,9 @@ data class ModifyBloodLevel(
 @Serializable
 @SerialName("!type:SatiateThirst")
 data class SatiateThirst(
-    val factor: Double? = null,
+    val factor: Double = 3.0,
 ) : ReagentEffect() {
     override fun humanReadable(): String {
-        if(factor == null)
-            return "satiate thirst (completely? 1u? unclear!)"
-
         return if(factor > 0)
             "satiate ${factor.hr()} thirst"
         else
@@ -332,12 +329,9 @@ data class SatiateThirst(
 @Serializable
 @SerialName("!type:SatiateHunger")
 data class SatiateHunger(
-    val factor: Double? = null,
+    val factor: Double = 3.0,
 ) : ReagentEffect() {
     override fun humanReadable(): String {
-        if(factor == null)
-            return "satiate hunger (completely? 1u? unclear!)"
-
         return if(factor > 0)
             "satiate ${factor.hr()} hunger"
         else
